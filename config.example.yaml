@@ -1,0 +1,44 @@
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: secret
+  name: mydb
+
+aws:
+  access_key_id: your-access-key
+  secret_access_key: your-secret-key
+  region: us-west-2
+  bucket: your-bucket-name
+  database_prefix: database
+  directory_prefix: directory
+
+schedules:
+  databases:
+    - name: daily-backup
+      expression: '0 0 * * *' # Run at midnight every day
+      database:
+        host: localhost
+        port: 5432
+        user: postgres
+        password: secret
+        name: mydb
+      aws:
+        access_key_id: your-access-key
+        secret_access_key: your-secret-key
+        region: us-west-2
+        bucket: your-bucket-name
+        database_prefix: database
+
+  directories:
+    - name: documents-backup
+      expression: '0 0 * * *' # Run at midnight every day
+      source_path: /path/to/your/documents
+      sync: true
+      delete: true
+      aws:
+        access_key_id: your-access-key
+        secret_access_key: your-secret-key
+        region: us-west-2
+        bucket: your-bucket-name
+        directory_prefix: documents
