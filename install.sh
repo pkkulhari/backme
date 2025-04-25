@@ -41,8 +41,6 @@ if [ -f "$INSTALL_DIR/backme" ]; then
     systemctl stop "$SERVICE_NAME"
     systemctl disable "$SERVICE_NAME"
     rm -f "/etc/systemd/system/$SERVICE_NAME.service"
-    userdel -r backme || true
-    groupdel backme || true
 fi
 
 # Create necessary directories
@@ -58,6 +56,18 @@ mv "$TEMP_DIR/backme-linux-amd64" "$INSTALL_DIR/backme"
 rm -rf "$TEMP_DIR"
 chmod +x "$INSTALL_DIR/backme"
 print_status "Downloaded and installed latest release" $?
+
+# Create user and group
+if ! id backme >/dev/null 2>&1; then
+    echo "Creating backme user..."
+    useradd -r -s /bin/false -U -m -d /usr/share/backme backme
+    print_status "Created backme user" $?
+fi
+
+# Add current user to backme group
+echo "Adding current user to backme group.."
+usermod -a -G backme $(whoami)
+print_status "Set current user to backme group" $?
 
 # Create configuration file
 echo "Creating configuration file..."
@@ -129,20 +139,6 @@ RestartSec=3
 WantedBy=default.target
 EOL
 print_status "Created systemd service" $?
-
-# Create user and group
-echo "Creating service user..."
-id -u backme &>/dev/null || useradd -r -s /bin/false backme
-print_status "Created service user" $?
-
-# Set permissions
-echo "Setting permissions..."
-chown -R backme:backme "$INSTALL_DIR/backme"
-chmod 755 "$INSTALL_DIR/backme"
-chown -R backme:backme "$CONFIG_DIR"
-chmod 644 "$CONFIG_DIR/config.yaml"
-chmod 644 "/etc/systemd/system/$SERVICE_NAME.service"
-print_status "Set permissions" $?
 
 # Reload systemd and start service
 echo "Starting service..."
