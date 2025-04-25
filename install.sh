@@ -8,7 +8,7 @@ for BINDIR in /usr/local/bin /usr/bin /bin; do
 done
 
 # Default values
-INSTALL_DIR="$BINDIR/backme"
+INSTALL_DIR=$BINDIR
 CONFIG_DIR="/etc/backme"
 SERVICE_NAME="backme"
 GITHUB_REPO="pkkulhari/backme"
@@ -41,20 +41,23 @@ if [ -f "$INSTALL_DIR/backme" ]; then
     systemctl stop "$SERVICE_NAME"
     systemctl disable "$SERVICE_NAME"
     rm -f "/etc/systemd/system/$SERVICE_NAME.service"
-    userdel -r backme
-    groupdel backme
+    userdel -r backme || true
+    groupdel backme || true
 fi
 
 # Create necessary directories
-mkdir -p "$INSTALL_DIR"
 mkdir -p "$CONFIG_DIR"
 
 # Download latest release
 echo "Downloading latest release..."
 LATEST_RELEASE=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-curl -L "https://github.com/$GITHUB_REPO/releases/download/$LATEST_RELEASE/backme" -o "$INSTALL_DIR/backme"
+TEMP_DIR=$(mktemp -d)
+curl -L "https://github.com/$GITHUB_REPO/releases/download/$LATEST_RELEASE/backme-linux-amd64.tar.gz" -o "$TEMP_DIR/backme.tar.gz"
+tar -xzf "$TEMP_DIR/backme.tar.gz" -C "$TEMP_DIR"
+mv "$TEMP_DIR/backme-linux-amd64" "$INSTALL_DIR/backme"
+rm -rf "$TEMP_DIR"
 chmod +x "$INSTALL_DIR/backme"
-print_status "Downloaded latest release" $?
+print_status "Downloaded and installed latest release" $?
 
 # Create configuration file
 echo "Creating configuration file..."
@@ -118,7 +121,7 @@ After=network.target
 Type=simple
 User=backme
 Group=backme
-ExecStart=$INSTALL_DIR/backme --config $CONFIG_DIR/config.yaml
+ExecStart=$INSTALL_DIR/backme worker
 Restart=always
 RestartSec=3
 
@@ -134,7 +137,8 @@ print_status "Created service user" $?
 
 # Set permissions
 echo "Setting permissions..."
-chown -R backme:backme "$INSTALL_DIR"
+chown -R backme:backme "$INSTALL_DIR/backme"
+chmod 755 "$INSTALL_DIR/backme"
 chown -R backme:backme "$CONFIG_DIR"
 chmod 644 "$CONFIG_DIR/config.yaml"
 chmod 644 "/etc/systemd/system/$SERVICE_NAME.service"
