@@ -42,6 +42,15 @@ var rootCmd = &cobra.Command{
 		if err := initConfig(); err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
 		}
+
+		// Set log level from config
+		level, err := zerolog.ParseLevel(cfg.LogLevel)
+		if err != nil {
+			log.Warn().Msgf("Invalid log level %q, using info level", cfg.LogLevel)
+			level = zerolog.InfoLevel
+		}
+		zerolog.SetGlobalLevel(level)
+
 		return nil
 	},
 }

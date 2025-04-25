@@ -1,6 +1,7 @@
 package config
 
 type Config struct {
+	LogLevel  string         `mapstructure:"log_level"`
 	Database  DatabaseConfig `mapstructure:"database"`
 	AWS       AWSConfig      `mapstructure:"aws"`
 	Schedules Schedules      `mapstructure:"schedules"`
@@ -46,6 +47,7 @@ type DirectorySchedule struct {
 
 func New() *Config {
 	return &Config{
+		LogLevel: "info",
 		Database: DatabaseConfig{
 			Host: "localhost",
 			Port: 5432,
